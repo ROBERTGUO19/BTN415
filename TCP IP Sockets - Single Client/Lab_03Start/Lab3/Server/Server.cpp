@@ -5,25 +5,33 @@
 
 using namespace std;
 
-void main()
+void print(std::ostream& os, const char* msg)
 {
-	std::ofstream ofs("Output.txt");
-	if (!ofs)
+	os << msg << std::endl;
+	std::cout << msg << std::endl;
+}
+
+int main()
+{
+	std::ofstream ofs("Server_Output.txt");
+	if (!ofs.is_open())
 		std::cout << "ERROR: Failed to open output file" << std::endl;
 	
 	//starts Winsock DLLs		
 	WSADATA wsaData;
 	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
-		ofs << "ERROR:  Failed to start WSA" << std::endl;
-		return;
+	{
+		print(ofs, "ERROR:  Failed to start WSA");
+		return 0;
+	}
 
 	//create server socket
 	SOCKET ServerSocket;
 	ServerSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (ServerSocket == INVALID_SOCKET) {
 		WSACleanup();
-		ofs << "ERROR:  Failed to create ServerSocket" << std::endl;
-		return;
+		print(ofs, "ERROR:  Failed to create ServerSocket");
+		return 0;
 	}
 
 	//binds socket to address
@@ -35,20 +43,20 @@ void main()
 	{
 		closesocket(ServerSocket);
 		WSACleanup();
-		ofs << "ERROR:  Failed to bind ServerSocket" << std::endl;
-		return;
+		print(ofs, "ERROR:  Failed to bind ServerSocket");
+		return 0;
 	}
 
 	//listen on a socket
 	if (listen(ServerSocket, 1) == SOCKET_ERROR) {
 		closesocket(ServerSocket);
 		WSACleanup();
-		ofs << "ERROR:  listen failed to configure ServerSocket" << std::endl;
-		return;
+		print(ofs, "ERROR:  listen failed to configure ServerSocket");
+		return 0;
 	}
 
 
-	cout << "Waiting for client connection\n" << endl;
+	print(ofs, "Waiting for client connection");
 
 	//accepts a connection from a client
 	SOCKET ConnectionSocket;
@@ -56,18 +64,22 @@ void main()
 	if ((ConnectionSocket = accept(ServerSocket, NULL, NULL)) == SOCKET_ERROR) {
 		closesocket(ServerSocket);
 		WSACleanup();
-		return;
+		return 0;
 	}
 
-	ofs << "Connection Established" << std::endl;
+	print(ofs, "Connection Established");
 
 	while (1) {
 		//receives RxBuffer
 		char RxBuffer[128] = {};
 		recv(ConnectionSocket, RxBuffer, sizeof(RxBuffer), 0);
-		ofs << "Msg Rx: " << RxBuffer << std::endl;
+		std::string msg = "Msg Rx: ";
+		msg += RxBuffer;
+		print(ofs, msg.c_str());
 	}
 	closesocket(ConnectionSocket);	//closes incoming socket
 	closesocket(ServerSocket);	    //closes server socket	
 	WSACleanup();					//frees Winsock resources
+
+	return 1;
 }

@@ -5,14 +5,23 @@
 #include <fstream>
 using namespace std;
 
-void main()
+void print(std::ostream& os, const char* msg)
 {
-	std::ofstream ofs("Output.txt");
+	os << msg << std::endl;
+	std::cout << msg << std::endl;
+}
+
+int main()
+{
+	std::ofstream ofs("Client_Output.txt");
+	if (!ofs.is_open())
+		std::cout << "ERROR:  Failed to open the output file" << std::endl;
+
 	//starts Winsock DLLs
 	WSADATA wsaData;
 	if ((WSAStartup(MAKEWORD(2, 2), &wsaData)) != 0) {
-		ofs << "ERROR: Failed to start WSA" << std::endl;
-		return;
+		print(ofs, "ERROR: Failed to start WSA");
+		return 0;
 	}
 
 	//initializes socket. SOCK_STREAM: TCP
@@ -20,8 +29,8 @@ void main()
 	ClientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (ClientSocket == INVALID_SOCKET) {
 		WSACleanup();
-		ofs << "ERROR:  Failed to create ClientSocket" << std::endl;
-		return;
+		print(ofs, "ERROR:  Failed to create ClientSocket");
+		return 0;
 	}
 
 	//Connect socket to specified server
@@ -32,8 +41,8 @@ void main()
 	if ((connect(ClientSocket, (struct sockaddr *)&SvrAddr, sizeof(SvrAddr))) == SOCKET_ERROR) {
 		closesocket(ClientSocket);
 		WSACleanup();
-		ofs << "ERROR:  Connection attempted failed" << std::endl;
-		return;
+		print(ofs, "ERROR:  Connection attempted failed");
+		return 0;
 	}
 
 
@@ -42,8 +51,11 @@ void main()
 	while (1) {
 		//sends Txbuffer		
 		char TxBuffer[128] = {};
-		ofs << "Enter a String to transmit" << std::endl;
+		print(ofs, "Enter a String to transmit");
 		cin >> TxBuffer;
+		std::string msg = "Tx: ";
+		msg += TxBuffer;
+		print(ofs, msg.c_str());
 		send(ClientSocket, TxBuffer, sizeof(TxBuffer), 0);
 	}
 
@@ -51,4 +63,6 @@ void main()
 	closesocket(ClientSocket);
 	//frees Winsock DLL resources
 	WSACleanup();
+
+	return 1;
 }
